@@ -7,7 +7,7 @@ defmodule LiveViewNative.LiveSession do
 
   def on_mount(:live_view_native, params, _session, socket) do
     with %{} = connect_params <- (if connected?(socket), do: get_connect_params(socket), else: params),
-         %LiveViewNativePlatform.Context{} = platform_context <-
+         %LiveViewNativePlatform.Env{} = platform_context <-
            get_platform_context(connect_params) do
       socket =
         socket
@@ -18,13 +18,10 @@ defmodule LiveViewNative.LiveSession do
       {:cont, socket}
     else
       _result ->
-        platform_config = %LiveViewNative.Platforms.Web{}
-        platform_context = LiveViewNativePlatform.Kit.context(platform_config)
-
         socket =
           socket
-          |> assign(:native, platform_context)
-          |> assign(:platform_id, platform_context.platform_id)
+          |> assign(:native, nil)
+          |> assign(:platform_id, :web)
           |> assign(:global_native_bindings, [])
 
         {:cont, socket}
@@ -36,7 +33,7 @@ defmodule LiveViewNative.LiveSession do
   defp get_platform_context(%{"_platform" => platform_id} = connect_params) do
     platforms = LiveViewNative.platforms()
 
-    with %LiveViewNativePlatform.Context{platform_config: platform_config} = context <-
+    with %LiveViewNativePlatform.Env{platform_config: platform_config} = context <-
            Map.get(platforms, platform_id) do
       platform_metadata = get_platform_metadata(connect_params)
       platform_config = merge_platform_metadata(platform_config, platform_metadata)
@@ -63,8 +60,11 @@ defmodule LiveViewNative.LiveSession do
     end)
   end
 
-  defp get_global_native_bindings(%{ "_global_native_bindings" => %{} = global_native_bindings }),
-    do: Enum.map(global_native_bindings, fn {key, value} -> {String.to_existing_atom(key), value} end)
+  defp get_global_native_bindings(%{"_global_native_bindings" => %{} = global_native_bindings}),
+    do:
+      Enum.map(global_native_bindings, fn {key, value} ->
+        {String.to_existing_atom(key), value}
+      end)
 
   defp get_global_native_bindings(_connect_params), do: nil
 end
