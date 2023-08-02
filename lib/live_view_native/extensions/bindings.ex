@@ -10,20 +10,27 @@ defmodule LiveViewNative.Extensions.Bindings do
 
       Module.register_attribute(__MODULE__, :__native_bindings__, accumulate: true)
 
-      on_mount {__MODULE__, :_set_native_binding_defaults}
+      on_mount({__MODULE__, :_set_native_binding_defaults})
 
       def on_mount(:_set_native_binding_defaults, _params, _session, socket) do
         defaults =
           Enum.map(__native_bindings__(), fn {name, {_type, opts}} ->
             case Keyword.get(opts, :persist) do
               :global ->
-                {name, Keyword.get(socket.assigns.global_native_bindings, name, Keyword.get(opts, :default))}
+                {name,
+                 Keyword.get(
+                   socket.assigns.global_native_bindings,
+                   name,
+                   Keyword.get(opts, :default)
+                 )}
+
               _ ->
                 {name, Keyword.get(opts, :default)}
             end
           end)
 
-        bindings = __native_bindings__()
+        bindings =
+          __native_bindings__()
           |> Enum.map(fn {name, {_type, opts}} ->
             {name, Enum.into(opts, %{})}
           end)
@@ -32,8 +39,8 @@ defmodule LiveViewNative.Extensions.Bindings do
         {
           :cont,
           socket
-            |> push_event("_native_bindings_init", %{ bindings: bindings, scope: __ENV__.module })
-            |> assign(defaults)
+          |> push_event("_native_bindings_init", %{bindings: bindings, scope: __ENV__.module})
+          |> assign(defaults)
         }
       end
 
@@ -109,8 +116,8 @@ defmodule LiveViewNative.Extensions.Bindings do
         end
 
       socket
-        |> assign(map)
-        |> push_event("_native_bindings", %{data: data, animation: animation})
+      |> assign(map)
+      |> push_event("_native_bindings", %{data: data, animation: animation})
     end
   end
 end
