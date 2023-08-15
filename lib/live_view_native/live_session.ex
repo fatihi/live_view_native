@@ -62,9 +62,16 @@ defmodule LiveViewNative.LiveSession do
 
   defp get_global_native_bindings(%{"_global_native_bindings" => %{} = global_native_bindings}),
     do:
-      Enum.map(global_native_bindings, fn {key, value} ->
-        {String.to_existing_atom(key), value}
+      global_native_bindings
+      |> Enum.map(fn {key, value} ->
+        try do
+          {String.to_existing_atom(key), value}
+        rescue
+          _ ->
+            nil
+        end
       end)
+      |> Enum.filter(&(&1 != nil))
 
   defp get_global_native_bindings(_connect_params), do: nil
 end
